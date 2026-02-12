@@ -47,14 +47,18 @@ pm2 start ecosystem.config.cjs
 pm2 save
 ```
 
-## Nginx Reverse Proxy
+## Nginx + Varnish (h.tools)
 
-1. Update `server_name` in `deploy/nginx/heartbeat-text-converter.conf`.
-2. Copy and enable the site:
+This project includes:
+- Front Nginx on `80/443` -> Varnish `127.0.0.1:6081`
+- Back Nginx on `127.0.0.1:8080` -> Nuxt app `127.0.0.1:3020`
+
+Use `deploy/nginx/h.tools.conf` and enable it:
 
 ```bash
-sudo cp deploy/nginx/heartbeat-text-converter.conf /etc/nginx/sites-available/heartbeat-text-converter.conf
-sudo ln -s /etc/nginx/sites-available/heartbeat-text-converter.conf /etc/nginx/sites-enabled/heartbeat-text-converter.conf
+sudo cp deploy/nginx/h.tools.conf /etc/nginx/sites-available/heartbeat-text-converter.conf
+sudo ln -s /etc/nginx/sites-available/h.tools.conf /etc/nginx/sites-enabled/heartbeat-text-converter.conf
+sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t
 sudo systemctl reload nginx
 ```

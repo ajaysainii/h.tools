@@ -1,0 +1,162 @@
+/* assets/css/theme.css */
+
+/* --------------
+   Base tokens
+   -------------- */
+:root {
+  --hb-bg: #0b0d13;
+  --hb-surface: #111422;
+  --hb-border: #2a2d3a;
+  --hb-text: #e7eaf1;
+  --hb-text-muted: #a5a9b6;
+
+  --hb-brand: #6aa3ff;
+  --hb-brand-rgb: 106, 163, 255;
+  --hb-ghost-border: rgba(255,255,255,.35);
+  --hb-ghost-border-hover: rgba(255,255,255,.6);
+
+  --hb-button-primary-bg: #0b0d13;
+  --hb-button-primary-text: #ffffff;
+  --hb-button-primary-border: #f7322f;
+  --hb-button-muted-text: var(--hb-text-muted);
+  --hb-button-muted-border: var(--hb-text-muted);
+  --hb-button-ghost-text: var(--hb-text);
+  --hb-button-ghost-border: var(--hb-ghost-border);
+
+  --hb-card-shadow: 0 6px 20px rgba(0,0,0,.25);
+
+  --hb-card-bg: #212529;
+}
+
+/* Light theme overrides */
+:root[data-theme="light"] {
+  --hb-bg: #ffffff;
+  --hb-surface: #ffffff;
+  --hb-border: #e9edf4;
+  --hb-text: #111317;
+  --hb-text-muted: #5d6472;
+
+  --hb-brand: #2b6fff;
+  --hb-brand-rgb: 43, 111, 255;
+  --hb-ghost-border: rgba(0,0,0,.35);
+  --hb-ghost-border-hover: rgba(0,0,0,.55);
+
+  --hb-button-primary-bg: #0b0d13;
+  --hb-button-primary-text: #ffffff;
+  --hb-button-primary-border: #f7322f;
+  --hb-button-muted-text: var(--hb-text-muted);
+  --hb-button-muted-border: var(--hb-text-muted);
+  --hb-button-ghost-text: var(--hb-text);
+  --hb-button-ghost-border: var(--hb-ghost-border);
+
+  --hb-card-shadow: 0 6px 20px rgba(0,0,0,.12);
+
+  --hb-card-bg: #ffffff;
+}
+
+/* --------------
+   Global surface & text
+   -------------- */
+html, body {
+  background: var(--hb-bg);
+  color: var(--hb-text);
+}
+
+/* --------------
+   “Ghost” button used in header
+   -------------- */
+.btn-ghost {
+  border: 1px solid var(--hb-ghost-border);
+  color: var(--hb-text);
+  padding: .25rem .6rem;
+  border-radius: 999px;
+  transition: background-color .15s ease, border-color .15s ease, transform .06s ease;
+}
+.btn-ghost:hover {
+  background: rgba(255,255,255,.08);
+  border-color: var(--hb-ghost-border-hover);
+}
+:root[data-theme="light"] .btn-ghost:hover {
+  background: rgba(0,0,0,.06);
+}
+
+/* --------------
+   Bootstrap-ish helpers remapped to theme
+   NOTE: this lets you keep existing markup like .bg-black/.text-white
+   -------------- */
+
+/* Header/menus often used bg-black → make it themed */
+:root[data-theme="light"] .bg-black { 
+  background-color: #fff !important; 
+  border-bottom: 1px solid var(--hb-border);
+}
+:root[data-theme="dark"] .bg-black { 
+  background-color: #000 !important; 
+}
+
+:root[data-theme="light"] .bg-card { 
+  background-color: var(--hb-card-bg) !important; 
+
+  border-bottom: 1px solid var(--hb-border);
+}
+:root[data-theme="dark"] .bg-card { 
+  background-color: var(--hb-card-bg) !important; 
+}
+/* Text remap (common in your header) */
+:root[data-theme="light"] .text-white { color: var(--hb-text) !important; }
+:root[data-theme="dark"]  .text-white { color: #fff !important; }
+:root .text-body,
+:root .text-dark {
+  color: var(--hb-text) !important;
+}
+
+/* Tables default to theme text so dark mode stays readable */
+:root .table {
+  color: var(--hb-text) !important;
+}
+:root .table th,
+:root .table td {
+  color: var(--hb-text) !important;
+}
+
+/* Dropdown/menu background */
+.dropdown-menu {
+  background: var(--hb-surface) !important;
+  border: 1px solid var(--hb-border) !important;
+  box-shadow: var(--hb-card-shadow);
+}
+.dropdown-item { color: var(--hb-text) !important; }
+.dropdown-item:hover { background: rgba(127,127,127,.08) !important; }
+
+/* Offcanvas in mobile menu */
+.offcanvas { background: var(--hb-surface) !important; color: var(--hb-text) !important; }
+.btn-close-white { filter: invert(1) grayscale(100%); }
+
+/* Cards */
+.card { background: var(--hb-surface); border: 1px solid var(--hb-border); box-shadow: var(--hb-card-shadow); }
+.card-footer { background: var(--hb-surface); border-top: 1px solid var(--hb-border); }
+
+/* Borders & muted text */
+.border-primary { border-color: var(--hb-text) !important; }
+.border-secondary { border-color: var(--hb-border) !important; }
+.text-muted, .text-white-50 { color: var(--hb-text-muted) !important; }
+
+/* Inputs (used in mobile language select) */
+.form-select, .form-control {
+  background-color: var(--hb-surface);
+  color: var(--hb-text);
+  border-color: var(--hb-border);
+}
+.form-select:focus, .form-control:focus {
+  border-color: var(--hb-brand);
+  box-shadow: 0 0 0 .1rem rgba(106,163,255,.25);
+}
+
+/* Links */
+a { color: var(--hb-brand); }
+a:hover { opacity: .9; }
+
+/* Utility so you can use if needed (optional) */
+.hb-surface { background: var(--hb-surface) !important; }
+.hb-text    { color: var(--hb-text) !important; }
+.hb-muted   { color: var(--hb-text-muted) !important; }

@@ -1,0 +1,219 @@
+@font-face {
+	font-family: 'avenier book';
+	font-style: normal;
+	font-weight: normal;
+	font-display: auto;
+	src: url(/fonts/Avenir-Book.ttf) format('truetype');
+}
+
+@font-face {
+	font-family: 'dala floda medium';
+	font-style: normal;
+	font-weight: normal;
+	font-display: auto;
+	src: url(/fonts/DalaFloda-Medium-Reduced.woff.ttf) format('truetype');
+}
+@font-face {
+	font-family: 'Avenir Medium';
+	font-style: normal;
+	font-weight: normal;
+	font-display: auto;
+	src: url(/fonts/Avenir-Medium.eot);
+	src: url('/fonts/Avenir-Medium.eot?#iefix') format('embedded-opentype'),
+		url(/fonts/Avenir-Medium.woff2) format('woff2'),
+		url(/fonts/Avenir-Medium.woff) format('woff'),
+		url(/fonts/Avenir-Medium.ttf) format('truetype'),
+}
+@font-face {
+	font-family: 'avenier heavy';
+	font-style: normal;
+	font-weight: normal;
+	font-display: auto;
+	src: url(/fonts/Avenir-Heavy.ttf) format('truetype');
+}
+
+
+body {
+  font-family: "avenier book", Sans-serif;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 25px;
+  color: #000000;
+  background: #f5f5f5;
+  color: #333;
+}
+
+@media (min-width: 1400px) {
+    .container, .container-lg, .container-md, .container-sm, .container-xl, .container-xxl{
+        max-width: 1200px !important;
+    }
+}
+
+/* Enable dropdown on hover for desktop */
+@media (min-width: 992px) {
+  .dropdown:hover .dropdown-menu {
+    display: block;
+    margin-top: 0; /* Optional: removes delay gap */
+  }
+}
+
+
+.dropdown-menu{
+  background: transparent;
+  border: none;
+  color: white;
+  line-height: 2rem;
+}
+.dropdown-menu li:not(:first-child) {
+  border-top: 1px solid #f7322f;
+  margin-top: 4px;
+  padding-top: 6px;
+}
+
+.dropdown-item:hover{
+  background: transparent;
+}
+
+.nav-item, .dropdown-item, .nav-link {
+    font-family: "avenier book", Sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+}
+
+.dropdown-toggle::after {
+    margin-left: 0.55em;
+}
+
+
+.footer-link-menu{
+    font-family: "avenier book", Sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 2.5rem;
+    letter-spacing: 2px;
+
+}
+
+.form-select{
+    padding: 8px 10px;
+    letter-spacing: 1px !important;
+
+}
+.form-check-input,  .form-control,  .form-input{
+  letter-spacing: 1px !important;
+
+}
+
+.form-select, .form-input, .form-control, .form-control, .btn, .form-check-input {
+  border-radius: 0 !important;
+}
+.form-select:focus, .form-input:focus, .form-control:focus, .form-control:focus, .form-check-input:focus{
+  /* border: 0 !important; */
+  box-shadow: none !important;
+}
+
+ label.form-check-label{
+  padding-top: 5px;
+
+}
+
+.top--120 {
+  top: -120px !important;
+}
+
+.h--400{
+  height: 400px !important;
+}
+
+.property-item{
+  float: left;
+  padding: 10px;
+}
+
+.bg-gradient-black-top {
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 1));
+}
+
+
+.basic-title-cap{
+    font-family: "Avenir Medium", Sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+    line-height: 26px;
+    letter-spacing: 3px;
+    color: #000000;
+}
+
+
+.font-bold {
+  font-weight: bold;
+}
+
+.font-bolder {
+  font-weight: bolder;
+}
+
+
+.upload-list .row:last-child hr {
+  display: none;
+}
+
+
+.row-hover-effect:hover{
+  transition: background-color 0.3s ease;
+  background: #2b2b2b14 !important;
+  /* border-radius: 0 !important; */
+}
+
+.row-hover-effect {
+    padding-top: 1rem !important;
+    margin-bottom: 1rem;
+}
+.row-hover-effect:nth-last-child(1){
+  margin-bottom: 0 !important;
+  padding-bottom: 1rem !important;
+}
+
+
+
+/* @media (min-width: 992px) {
+  .dropdown:hover > .dropdown-menu { display: none !important; }
+}
+.dropdown.show > .dropdown-menu { display: block !important; } */
+
+
+
+
+
+
+/* Admin Panel Layout */
+
+.admin-layout .card{
+    background: #242637;
+}
+
+
+.admin-layout .card label{
+    color: white;
+}
+
+.admin-layout  input, .admin-layout  select, .admin-layout textarea, 
+.admin-layout input:focus, .admin-layout select:focus, .admin-layout textarea:focus
+{
+    background: #0c0c0c !important;
+    color: white;
+    border: 1px solid #ffffff87 !important;
+}
+
+.admin-layout input::placeholder{
+      color: white;
+
+}
+
+
+
+
+
+table{
+  --bs-table-bg: transparent !important; 
+}

@@ -7,7 +7,7 @@
           <p class="case-studio__lead">Convert text quickly with smart exceptions</p>
         </div>
         <button class="case-studio__action-btn case-studio__exceptions-trigger" type="button" @click="showExceptionsPopup = true">
-          Exceptions ({{ userExceptions.length }})
+          Exceptions ({{ effectiveExceptions.length }})
         </button>
       </div>
 
@@ -24,20 +24,20 @@
             rows="7"
             placeholder="Type or paste text here"
           />
-        </div>
 
-        <div class="case-studio__actions" aria-label="Conversion actions">
-          <button
-            v-for="conversion in conversionButtons"
-            :key="conversion.kind"
-            class="case-studio__chip"
-            type="button"
-            @mouseenter="applyCase(conversion.kind)"
-            @focus="applyCase(conversion.kind)"
-            @click="applyCase(conversion.kind)"
-          >
-            {{ conversion.label }}
-          </button>
+          <div class="case-studio__actions" aria-label="Conversion actions">
+            <button
+              v-for="conversion in conversionButtons"
+              :key="conversion.kind"
+              class="case-studio__chip"
+              type="button"
+              @mouseenter="applyCase(conversion.kind)"
+              @focus="applyCase(conversion.kind)"
+              @click="applyCase(conversion.kind)"
+            >
+              {{ conversion.label }}
+            </button>
+          </div>
         </div>
 
         <div class="case-studio__panel case-studio__panel--output">
@@ -97,16 +97,17 @@
         <p v-else-if="exceptionsError" class="case-studio__exceptions-note">
           {{ exceptionsError }}
         </p>
-        <div v-if="userExceptions.length" class="case-studio__exception-list">
+        <div v-if="effectiveExceptionEntries.length" class="case-studio__exception-list">
           <button
-            v-for="exception in userExceptions"
-            :key="exception"
+            v-for="exception in effectiveExceptionEntries"
+            :key="`${exception.source}-${exception.key}`"
             class="case-studio__exception-item"
             type="button"
-            :disabled="savingExceptions"
+            :disabled="savingExceptions || !isAuthed"
             @click="removeException(exception)"
           >
-            <span>{{ exception }}</span>
+            <span>{{ exception.value }}</span>
+            <small v-if="exception.source === 'global'" class="case-studio__exception-source">Global</small>
             <i class="bi bi-x"></i>
           </button>
         </div>
@@ -132,9 +133,12 @@ const outputText = ref('')
 const exceptionInput = ref('')
 const showExceptionsPopup = ref(false)
 const userExceptions = ref<string[]>([])
+const globalExceptions = ref<string[]>([])
+const excludeGlobalWords = ref<string[]>([])
 const loadingExceptions = ref(false)
 const savingExceptions = ref(false)
 const exceptionsError = ref('')
+const globalExceptionsError = ref('')
 const exceptionsStorageMode = ref<'unknown' | 'root' | 'legacy'>('unknown')
 const toast = useToast()
 const { user, ready } = useAuth()
@@ -164,15 +168,53 @@ const conversionButtons: Array<{ kind: CaseKind; label: string }> = [
   { kind: 'ascii', label: 'ASCII' },
   { kind: 'asciiHex', label: 'ASCII Hex' },
 ]
+const conversionToastLabel: Record<CaseKind, string> = {
+  title: 'Title',
+  sentence: 'Sentence',
+  lower: 'Lower',
+  upper: 'Upper',
+  snake: 'Snake',
+  kebab: 'Kebab',
+  reverse: 'Reverse',
+  ascii: 'ASCII',
+  asciiHex: 'ASCII Hex',
+}
 
 const titleCaseSmallWords = new Set(['a', 'an', 'and', 'as', 'at', 'but', 'by', 'for', 'in', 'nor', 'of', 'on', 'or', 'the', 'up'])
+type ExceptionEntry = { key: string; value: string; source: 'user' | 'global' }
+const excludedGlobalLookup = computed(() => new Set(excludeGlobalWords.value.map((word) => word.toLowerCase())))
+const effectiveExceptionEntries = computed<ExceptionEntry[]>(() => {
+  const list: ExceptionEntry[] = []
+  const seen = new Set<string>()
+
+  for (const word of globalExceptions.value) {
+    const key = word.toLowerCase()
+    if (excludedGlobalLookup.value.has(key) || seen.has(key)) continue
+    seen.add(key)
+    list.push({ key, value: word, source: 'global' })
+  }
+
+  for (const word of userExceptions.value) {
+    const key = word.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    list.push({ key, value: word, source: 'user' })
+  }
+
+  return list
+})
+const effectiveExceptions = computed(() => effectiveExceptionEntries.value.map((item) => item.value))
 const exceptionLookup = computed(() => {
   const map = new Map<string, string>()
-  for (const exception of userExceptions.value) {
-    map.set(exception.toLowerCase(), exception)
+  for (const exception of effectiveExceptionEntries.value) {
+    map.set(exception.key, exception.value)
   }
   return map
 })
+
+if (import.meta.client) {
+  void loadGlobalExceptions()
+}
 
 watch(
   [ready, () => user.value?.uid ?? ''],
@@ -180,6 +222,7 @@ watch(
     if (!import.meta.client || !authReady) return
     if (!uid) {
       userExceptions.value = []
+      excludeGlobalWords.value = []
       loadingExceptions.value = false
       exceptionsError.value = ''
       return
@@ -228,7 +271,7 @@ async function applyCase(kind: CaseKind) {
   }
 
   outputText.value = result
-  await copyText(result)
+  await copyText(result, `${conversionToastLabel[kind]} copied to clipboard.`)
 }
 
 function clearAll() {
@@ -237,16 +280,16 @@ function clearAll() {
 }
 
 async function copyOutput() {
-  await copyText(outputText.value)
+  await copyText(outputText.value, 'Output copied to clipboard.')
 }
 
-async function copyText(text: string) {
+async function copyText(text: string, successMessage = 'Copied to clipboard.') {
   if (!text) return
   if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) return
 
   try {
     await navigator.clipboard.writeText(text)
-    toast.success('Copied to clipboard.')
+    toast.success(successMessage)
   } catch {
     // Keep UX fast if clipboard is blocked.
   }
@@ -315,33 +358,52 @@ async function addException() {
   const nextValue = exceptionInput.value.trim()
   if (!nextValue) return
 
-  const exists = userExceptions.value.some((item) => item.toLowerCase() === nextValue.toLowerCase())
+  const nextKey = nextValue.toLowerCase()
+  const exists = userExceptions.value.some((item) => item.toLowerCase() === nextKey)
   if (exists) {
     exceptionInput.value = ''
     return
   }
 
+  if (globalExceptions.value.some((item) => item.toLowerCase() === nextKey) && !excludedGlobalLookup.value.has(nextKey)) {
+    exceptionInput.value = ''
+    return
+  }
+
   const nextItems = [...userExceptions.value, nextValue]
-  const didSave = await persistUserExceptions(nextItems)
+  const nextExcluded = excludeGlobalWords.value.filter((item) => item.toLowerCase() !== nextKey)
+  const didSave = await persistUserExceptions(nextItems, nextExcluded)
   if (!didSave) return
 
   exceptionInput.value = ''
 }
 
-async function removeException(exception: string) {
-  if (!isAuthed.value) return
-  const nextItems = userExceptions.value.filter((item) => item.toLowerCase() !== exception.toLowerCase())
-  await persistUserExceptions(nextItems)
+async function removeException(exception: ExceptionEntry) {
+  if (!isAuthed.value) {
+    toast.info('Sign in to edit exceptions.')
+    return
+  }
+
+  if (exception.source === 'global') {
+    const nextExcluded = sanitizeExceptionList([...excludeGlobalWords.value, exception.value], { lowercase: true })
+    await persistUserExceptions(userExceptions.value, nextExcluded)
+    return
+  }
+
+  const nextItems = userExceptions.value.filter((item) => item.toLowerCase() !== exception.key)
+  await persistUserExceptions(nextItems, excludeGlobalWords.value)
 }
 
 async function loadUserExceptions(uid: string) {
   loadingExceptions.value = true
   exceptionsError.value = ''
   try {
-    const items = await loadExceptionsFromFirestore(uid)
-    userExceptions.value = sanitizeExceptionList(items)
+    const data = await loadExceptionsFromFirestore(uid)
+    userExceptions.value = sanitizeExceptionList(data.items)
+    excludeGlobalWords.value = sanitizeExceptionList(data.excludeGlobalWords, { lowercase: true })
   } catch (error) {
     userExceptions.value = []
+    excludeGlobalWords.value = []
     const message = formatExceptionError(error, 'load')
     exceptionsError.value = message
     toast.error(message)
@@ -350,15 +412,17 @@ async function loadUserExceptions(uid: string) {
   }
 }
 
-async function persistUserExceptions(nextItems: string[]) {
+async function persistUserExceptions(nextItems: string[], nextExcludedGlobalWords: string[] = excludeGlobalWords.value) {
   const uid = user.value?.uid
   if (!uid) return false
 
   savingExceptions.value = true
   try {
     const cleanItems = sanitizeExceptionList(nextItems)
-    await saveExceptionsToFirestore(uid, cleanItems)
+    const cleanExcluded = sanitizeExceptionList(nextExcludedGlobalWords, { lowercase: true })
+    await saveExceptionsToFirestore(uid, cleanItems, cleanExcluded)
     userExceptions.value = cleanItems
+    excludeGlobalWords.value = cleanExcluded
     exceptionsError.value = ''
     return true
   } catch (error) {
@@ -370,7 +434,7 @@ async function persistUserExceptions(nextItems: string[]) {
   }
 }
 
-function sanitizeExceptionList(items: unknown): string[] {
+function sanitizeExceptionList(items: unknown, opts?: { lowercase?: boolean }): string[] {
   if (!Array.isArray(items)) return []
 
   const seen = new Set<string>()
@@ -382,7 +446,7 @@ function sanitizeExceptionList(items: unknown): string[] {
     const key = trimmed.toLowerCase()
     if (seen.has(key)) continue
     seen.add(key)
-    normalized.push(trimmed)
+    normalized.push(opts?.lowercase ? key : trimmed)
   }
   return normalized
 }
@@ -403,13 +467,21 @@ async function loadExceptionsFromFirestore(uid: string) {
         const userRef = doc($firebase.db, 'users', uid)
         const snapshot = await getDoc(userRef)
         exceptionsStorageMode.value = 'root'
-        return snapshot.data()?.caseStudioExceptions
+        const data = snapshot.data()
+        return {
+          items: data?.caseStudioExceptions,
+          excludeGlobalWords: data?.excludeGlobalWords ?? data?.excludeGlobalWord,
+        }
       }
 
       const legacyRef = doc($firebase.db, 'users', uid, 'caseStudio', 'exceptions')
       const snapshot = await getDoc(legacyRef)
       exceptionsStorageMode.value = 'legacy'
-      return snapshot.data()?.items
+      const data = snapshot.data()
+      return {
+        items: data?.items,
+        excludeGlobalWords: data?.excludeGlobalWords ?? data?.excludeGlobalWord,
+      }
     } catch (error) {
       lastError = error
       if (!shouldFallbackToOtherStorage(error)) break
@@ -419,7 +491,7 @@ async function loadExceptionsFromFirestore(uid: string) {
   throw lastError ?? new Error('unknown')
 }
 
-async function saveExceptionsToFirestore(uid: string, cleanItems: string[]) {
+async function saveExceptionsToFirestore(uid: string, cleanItems: string[], cleanExcludedGlobalWords: string[]) {
   const rootFirst = exceptionsStorageMode.value !== 'legacy'
   const attempts = rootFirst ? ['root', 'legacy'] as const : ['legacy', 'root'] as const
   let lastError: unknown = null
@@ -432,6 +504,8 @@ async function saveExceptionsToFirestore(uid: string, cleanItems: string[]) {
           userRef,
           {
             caseStudioExceptions: cleanItems,
+            excludeGlobalWords: cleanExcludedGlobalWords,
+            excludeGlobalWord: cleanExcludedGlobalWords,
             caseStudioUpdatedAt: serverTimestamp(),
           },
           { merge: true },
@@ -445,6 +519,8 @@ async function saveExceptionsToFirestore(uid: string, cleanItems: string[]) {
         legacyRef,
         {
           items: cleanItems,
+          excludeGlobalWords: cleanExcludedGlobalWords,
+          excludeGlobalWord: cleanExcludedGlobalWords,
           updatedAt: serverTimestamp(),
         },
         { merge: true },
@@ -458,6 +534,25 @@ async function saveExceptionsToFirestore(uid: string, cleanItems: string[]) {
   }
 
   throw lastError ?? new Error('unknown')
+}
+
+async function loadGlobalExceptions() {
+  globalExceptionsError.value = ''
+  try {
+    const settingsRef = doc($firebase.db, 'admin', 'tools', 'text', 'convert')
+    const snapshot = await getDoc(settingsRef)
+    const data = snapshot.data()
+    globalExceptions.value = sanitizeExceptionList(
+      data?.globalExceptions ?? data?.exceptions ?? data?.items ?? data?.words,
+    )
+  } catch (error) {
+    globalExceptions.value = []
+    const code = typeof error === 'object' && error && 'code' in error ? String((error as { code?: unknown }).code ?? '') : ''
+    if (code && code !== 'permission-denied') {
+      globalExceptionsError.value = `Could not load global exceptions (${code}).`
+      toast.error(globalExceptionsError.value)
+    }
+  }
 }
 
 function formatExceptionError(error: unknown, action: 'load' | 'save') {
@@ -514,7 +609,7 @@ function shouldFallbackToOtherStorage(error: unknown) {
 
 .case-studio__shell {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   align-items: start;
   gap: 2rem;
 }
@@ -572,14 +667,15 @@ function shouldFallbackToOtherStorage(error: unknown) {
 }
 
 .case-studio__actions {
+  margin-top: 1rem;
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  justify-content: flex-start;
   gap: 0.7rem;
-  align-self: center;
-  align-items: center;
 }
 
 .case-studio__chip {
+  display: inline-flex;
   border: 1px solid var(--hb-border, rgba(15, 23, 42, 0.12));
   background: var(--hb-surface, #ffffff);
   color: var(--hb-text, #111317);
@@ -684,6 +780,13 @@ function shouldFallbackToOtherStorage(error: unknown) {
   padding: 0.2rem 0.55rem;
 }
 
+.case-studio__exception-source {
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--hb-text-muted, #6b6f78);
+}
+
 .case-studio__exception-item:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -729,9 +832,7 @@ function shouldFallbackToOtherStorage(error: unknown) {
   }
 
   .case-studio__actions {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
+    justify-content: flex-start;
   }
 
   .case-studio__exceptions-trigger {

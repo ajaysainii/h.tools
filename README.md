@@ -56,8 +56,8 @@ This project includes:
 Use `deploy/nginx/h.tools.conf` and enable it:
 
 ```bash
-sudo cp deploy/nginx/h.tools.conf /etc/nginx/sites-available/heartbeat-text-converter.conf
-sudo ln -s /etc/nginx/sites-available/h.tools.conf /etc/nginx/sites-enabled/heartbeat-text-converter.conf
+sudo cp deploy/nginx/h.tools.conf /etc/nginx/sites-available/h.tools.conf
+sudo ln -s /etc/nginx/sites-available/h.tools.conf /etc/nginx/sites-enabled/h.tools.conf
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t
 sudo systemctl reload nginx
